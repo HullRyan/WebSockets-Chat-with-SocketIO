@@ -126,7 +126,7 @@
       var usernameButton = document.getElementById("username");
       var submitButton = form.querySelector("button");
 
-      var username = localStorage.getItem("username");
+      var username = localStorage.getItem("username") ? localStorage.getItem("username") : "Guest";
       usernameButton.textContent = username ? username : "Guest";
       
       usernameButton.addEventListener("click", function () {
