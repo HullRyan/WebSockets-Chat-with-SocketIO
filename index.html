@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body {
+        margin: 0;
+        padding-bottom: 3rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+
+      #form {
+        background: rgba(0, 0, 0, 0.15);
+        padding: 0.25rem;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        height: 3rem;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+      }
+      #input {
+        border: none;
+        padding: 0 1rem;
+        flex-grow: 1;
+        border-radius: 2rem;
+        margin: 0.25rem;
+      }
+      #input:focus {
+        outline: none;
+      }
+      #form > button {
+        cursor: pointer;
+        background: #333;
+        border: none;
+        padding: 0 1rem;
+        margin: 0.25rem;
+        border-radius: 3px;
+        outline: none;
+        color: #fff;
+      }
+
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      #messages > li {
+        padding: 0.5rem 1rem;
+      }
+      #messages > li:nth-child(odd) {
+        background: #efefef;
+      }
+      .message {
+        display: flex;
+      }
+      .message :first-child {
+        font-weight: bold;
+        color: rgb(132, 132, 132);
+        padding-right: .5em;
+      }
+      .chatbox {
+        display: flex;
+        height: 100%;
+        overflow: none;
+      }
+      #users {
+        background-color: #efefef;
+        width: 15rem;
+        height: 100%;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+      }
+      #message-box {
+        width: 100%;
+        height: 100%;
+        overflow-y: scroll;
+      }
+      .heading {
+        width: 100%;
+        text-align: center;
+        padding: 1em 0 1em 0;
+      }
+      #users-list {
+        list-style: none;
+      }
+      #users-list li::before {
+        content: "\2022";
+        color: rgb(14, 222, 77);
+        font-weight: 900;
+        font-size: larger;
+        display: inline-block; 
+        width: 1em;
+        margin-left: -1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chatbox">
+        <div id="message-box">
+            <ul id="messages"></ul>
+        </div>
+        <div id="users">
+            <div class="heading">Online Users</div>
+            <ul id="users-list"></ul>
+        </div>
+    </div>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button name="send">Send</button><button id="username" name="username">Set Username</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    if(!localStorage.username) {
+        localStorage.setItem("username", "Guest");
+    }
+
+      var socket = io();
+      var usersList = document.getElementById("users-list");
+      var messages = document.getElementById("messages");
+      var form = document.getElementById("form");
+      var input = document.getElementById("input");
+      var usernameButton = document.getElementById("username");
+      var submitButton = form.querySelector("button");
+
+      var username = localStorage.getItem("username");
+      usernameButton.textContent = username ? username : "Guest";
+      
+      usernameButton.addEventListener("click", function () {
+        temp = username;
+        username = prompt("Enter your username");
+        username = username? username : "Guest";
+        localStorage.setItem("username", username);
+        usernameButton.textContent = username;
+        socket.emit("rejoin", {username: username});
+      });
+
+      socket.emit("join", {username: username});
+
+      submitButton.addEventListener("click", function () {
+        socket.emit("chat message", {"message": input.value, "user": usernameButton.textContent});
+        input.value = "";
+      });
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+      });
+
+      socket.on("chat message", function (msg) {
+        console.log(msg)
+        var item = document.createElement("li");
+        item.className = "message";
+        var sender = document.createElement("p");
+        sender.textContent = msg.user;
+        var message = document.createElement("p");
+        message.textContent = msg.message;
+        item.appendChild(sender);
+        item.appendChild(message);
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+
+      socket.on("userList updated", function(users) {
+        console.log(users);
+        usersList.innerHTML = ""
+        users.forEach(function(user) {
+          var li = document.createElement("li");
+          li.textContent = user.username;
+          usersList.appendChild(li);
+        });
+      })
+    </script>
+  </body>
+</html>
